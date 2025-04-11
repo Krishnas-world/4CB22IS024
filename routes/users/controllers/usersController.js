@@ -1,6 +1,16 @@
 const User = require("../model/User");
 const getUsers = async (req, res) => {
     try {
+        const users = await User.find();
+        res.status(200).json(users);
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
+
+const storeUserDetails = async (req, res) => {
+    try {
         const users = {
             "1": "John Doe",
             "2": "Jane Doe",
@@ -23,16 +33,6 @@ const getUsers = async (req, res) => {
             "19": "Quinn Scott",
             "20": "Rachel Young"
         };
-        res.status(200).json(users);
-    } catch (error) {
-        console.log(error);
-        res.status(500).json({ message: "Internal server error" });
-    }
-}
-
-const storeUserDetails = async (req, res) => {
-    try {
-        const { users } = req.body;
         if (!users) {
             return res.status(400).json({ message: "Users are required" });
         }
