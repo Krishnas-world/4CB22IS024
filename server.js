@@ -3,7 +3,8 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const connectDB = require("./db/db");
 const usersRoutes = require("./routes/users/index");
-const postsRoutes = require("./routes/posts/index")
+const postsRoutes = require("./routes/posts/index");
+const commentRoutes = require("./routes/comments/index");
 
 dotenv.config();
 
@@ -16,7 +17,8 @@ app.use(express.urlencoded({ extended: true }));
 
 // routes
 app.use("/", usersRoutes);
-app.use("/", postsRoutes)
+app.use("/", postsRoutes);
+app.use("/", commentRoutes);
 
 connectDB();
 app.listen(port, () => {
