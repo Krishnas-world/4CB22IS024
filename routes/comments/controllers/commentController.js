@@ -48,25 +48,6 @@ const storeComments = async (req, res) => {
     }
 };
 
-const getComments = async (req, res) => {
-    try {
-        const userId = req.body.userId;
-        if (!userId) {
-            return res.status(400).json({ message: "Request body must contain a 'userId'." });
-        }
-        // 
-        const postId = req.body.postId;
-        if (!postId) {
-            return res.status(400).json({ message: "Request body must contain a 'postId'." });
-        }
-        const comments = await Comment.find().populate('postId').exec();
-        res.status(200).json(comments);
-        } catch (error) {
-        console.error("Error fetching comments:", error);
-        res.status(500).json({ message: "Internal server error" });
-    }
-}
 module.exports = {
     storeComments,
-    getComments
 }

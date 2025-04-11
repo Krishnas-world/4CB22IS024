@@ -1,13 +1,53 @@
 const User = require("../model/User");
+const Post = require("../../posts/model/posts");
+const Comment = require("../../comments/model/comments");
+
 const getUsers = async (req, res) => {
     try {
-        const users = await User.find();
-        res.status(200).json(users);
+
+        const topUsers = await Post.aggregate([
+            // Join with comments to get comment counts
+            {
+                $lookup: {
+                    from: 'comments',
+                    localField: 'postId',
+                    foreignField: 'postId',
+                    as: 'comments'
+                }
+            },
+            {
+                $group: {
+                    _id: '$userId',
+                    totalComments: { $sum: { $size: '$comments' } },
+                    postCount: { $sum: 1 }
+                }
+            },
+            {
+                $sort: { totalComments: -1 }
+            },
+            {
+                $limit: 5
+            }
+        ]);
+
+        const userDetails = await Promise.all(
+            topUsers.map(async (user) => {
+                const userDoc = await User.findOne({ userId: user._id });
+                return {
+                    userId: user._id,
+                    name: userDoc ? userDoc.name : 'Unknown User',
+                    totalComments: user.totalComments,
+                    postCount: user.postCount
+                };
+            })
+        );
+
+        res.status(200).json(userDetails);
     } catch (error) {
-        console.log(error);
+        console.error("Error fetching top users:", error);
         res.status(500).json({ message: "Internal server error" });
     }
-}
+};
 
 const storeUserDetails = async (req, res) => {
     try {
@@ -55,6 +95,7 @@ const storeUserDetails = async (req, res) => {
         res.status(500).json({ message: "Internal server error" });
     }
 };
+
 module.exports = {
     getUsers,
     storeUserDetails

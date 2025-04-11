@@ -1,23 +1,59 @@
-const Post = require("../model/posts"); 
+const Post = require("../model/posts");
+const Comment = require("../../comments/model/comments");
 
 const getPosts = async (req, res) => {
     try {
-        const { userId } = req.body;
+        const { type } = req.query;
 
-        if (!userId) {
-            return res.status(400).json({ message: "User ID is required." });
+        if (!type) {
+            return res.status(400).json({ message: "Query parameter 'type' is required (latest/popular)" });
         }
 
-        const posts = await Post.find({ userId: String(userId) }); 
-        if (posts.length === 0) {
-            return res.status(404).json({ message: "No posts found for this user." });
+        if (type === 'latest') {
+            const posts = await Post.find()
+                .sort({ createdAt: -1 })
+                .limit(5)
+                .populate('commentCount');
+            
+            return res.status(200).json(posts);
         }
 
-        res.status(200).json(posts);
+        if (type === 'popular') {
+            const posts = await Post.aggregate([
+                {
+                    $lookup: {
+                        from: 'comments',
+                        localField: 'postId',
+                        foreignField: 'postId',
+                        as: 'comments'
+                    }
+                },
+                {
+                    $addFields: {
+                        commentCount: { $size: '$comments' }
+                    }
+                },
+                {
+                    $sort: { commentCount: -1 }
+                }
+            ]);
+
+            if (posts.length === 0) {
+                return res.status(404).json({ message: "No posts found" });
+            }
+
+            const maxComments = posts[0].commentCount;
+            const topPosts = posts.filter(post => post.commentCount === maxComments);
+            
+            return res.status(200).json(topPosts);
+        }
+
+        return res.status(400).json({ message: "Invalid type parameter. Use 'latest' or 'popular'" });
+
     } catch (error) {
         console.error("Error fetching posts:", error);
         res.status(500).json({ message: "Internal server error" });
-    } 
+    }
 };
 
 const storePosts = async (req, res) => {
